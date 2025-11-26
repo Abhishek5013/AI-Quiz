@@ -1,0 +1,217 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "Represents a user's public profile information.",
+      "type": "object",
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture."
+        },
+        "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date and time the user profile was created."
+        }
+      },
+      "required": ["displayName", "email", "createdAt"]
+    },
+    "Quiz": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Quiz",
+      "type": "object",
+      "description": "Represents a quiz in the QuizWise application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the quiz entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the quiz."
+        },
+        "topic": {
+          "type": "string",
+          "description": "The main subject or category of the quiz."
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "The date and time the quiz was created.",
+          "format": "date-time"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "The user ID of the quiz creator."
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "topic",
+        "creationDate",
+        "ownerId"
+      ]
+    },
+    "Question": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Question",
+      "type": "object",
+      "description": "Represents a question in a quiz.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the question entity."
+        },
+        "quizId": {
+          "type": "string",
+          "description": "Reference to Quiz. (Relationship: Quiz 1:N Question)"
+        },
+        "text": {
+          "type": "string",
+          "description": "The text of the question."
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of question (e.g., multiple-choice, true/false, fill-in-the-blanks)."
+        },
+        "options": {
+          "type": "array",
+          "description": "Options for the question, applicable for multiple-choice questions.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "correctAnswer": {
+          "type": "string",
+          "description": "The correct answer to the question."
+        }
+      },
+      "required": [
+        "id",
+        "quizId",
+        "text",
+        "type",
+        "correctAnswer"
+      ]
+    },
+    "QuizAttempt": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "QuizAttempt",
+      "type": "object",
+      "description": "Represents a user's attempt at a quiz.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the quiz attempt entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N QuizAttempt)"
+        },
+        "quizId": {
+          "type": "string",
+          "description": "Reference to Quiz. (Relationship: Quiz 1:N QuizAttempt)"
+        },
+        "startTime": {
+          "type": "string",
+          "description": "The date and time the quiz attempt started.",
+          "format": "date-time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "The date and time the quiz attempt ended.",
+          "format": "date-time"
+        },
+        "score": {
+          "type": "number",
+          "description": "The user's score on the quiz attempt."
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "quizId",
+        "startTime",
+        "endTime",
+        "score"
+      ]
+    },
+    "Feedback": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Feedback",
+      "type": "object",
+      "description": "Represents feedback provided to a user after a quiz attempt.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the feedback entity."
+        },
+        "quizAttemptId": {
+          "type": "string",
+          "description": "Reference to QuizAttempt. (Relationship: QuizAttempt 1:1 Feedback)"
+        },
+        "feedbackText": {
+          "type": "string",
+          "description": "The text of the feedback provided to the user."
+        },
+        "date": {
+          "type": "string",
+          "description": "The date and time the feedback was generated.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "quizAttemptId",
+        "feedbackText",
+        "date"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password"
+    ]
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": {
+        "$ref": "#/entities/UserProfile"
+      },
+      "description": "Stores user profile data. This is a private collection, only writable by the owner."
+    },
+    "/quizzes/{quizId}": {
+      "schema": {
+        "$ref": "#/entities/Quiz"
+      },
+      "description": "Stores quiz data. Includes denormalized 'ownerId' field representing the quiz creator for authorization independence."
+    },
+    "/quizzes/{quizId}/questions/{questionId}": {
+      "schema": {
+        "$ref": "#/entities/Question"
+      },
+      "description": "Stores questions for a specific quiz. Includes denormalized 'quizOwnerId' field from the parent quiz for authorization independence. The `quizOwnerId` field allows security rules to validate ownership without needing to read the Quiz document."
+    },
+    "/users/{userId}/quiz_attempts/{quizAttemptId}": {
+      "schema": {
+        "$ref": "#/entities/QuizAttempt"
+      },
+      "description": "Stores quiz attempts for a specific user. The path inherently provides ownership (user) and includes the 'quizOwnerId' for potential admin access."
+    },
+    "/users/{userId}/quiz_attempts/{quizAttemptId}/feedback/{feedbackId}": {
+      "schema": {
+        "$ref": "#/entities/Feedback"
+      },
+      "description": "Stores feedback for a specific quiz attempt. Includes denormalized 'userOwnerId' field for authorization independence, which mirrors userId."
+    }
+  }
+}
